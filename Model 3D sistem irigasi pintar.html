@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Model 3D sistem irigasi pintar</title>
+<style>
+:root{--bg:#f6f7f4;--fg:#1f2a24;--mut:#5d6b62;--card:#fff;--bd:#d5dbd4;--ac:#1f7a4d;--acbg:#e3f2ea;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a16;--fg:#e8efe9;--mut:#9aa89f;--card:#1d2520;--bd:#33403a;--ac:#6fd19b;--acbg:#1f3a2c}}
+:root[data-theme="dark"]{--bg:#141a16;--fg:#e8efe9;--mut:#9aa89f;--card:#1d2520;--bd:#33403a;--ac:#6fd19b;--acbg:#1f3a2c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:20px 16px 32px}
+h1{font-size:24px;font-weight:600;margin:0 0 4px}
+p.sub{margin:0 0 16px;color:var(--mut);font-size:15px;max-width:60ch}
+#w{position:relative;height:clamp(380px,62vh,600px);overflow:hidden;border-radius:12px;background:var(--card);border:1px solid var(--bd)}
+#cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.l{position:absolute;font-size:12px;padding:1px 6px;background:var(--card);color:var(--fg);border:1px solid var(--bd);border-radius:4px;pointer-events:none;transform:translate(-50%,-100%);white-space:nowrap}
+.r{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.b{font:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:8px;cursor:pointer}
+.b:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.b.on{background:var(--acbg);border-color:var(--ac);color:var(--ac)}
+.s{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;font-size:14px;color:var(--mut);max-width:520px}
+.bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden}
+.bar i{display:block;height:100%;width:0}
+.hint{margin-top:16px;font-size:13px;color:var(--mut)}
+</style>
+</head>
+<body>
+<main>
+<h1>Sistem irigasi pintar</h1>
+<p class="sub">Model 3D proyek sekolah: pompa mengisi bak air, air mengalir ke bedengan, dan sensor tanah menentukan kapan pompa menyala.</p>
+<div id="w"><canvas id="cv" aria-label="Model 3D sistem irigasi pintar"></canvas><div id="lb"></div></div>
+<div class="r"><button class="b on" id="bA">Mode otomatis</button><button class="b" id="bP">Pompa: OFF</button><button class="b on" id="bL">Label</button><button class="b" id="bR">Reset kamera</button></div>
+<div class="s"><span>Bak air</span><div class="bar"><i id="f1" style="background:#3b8fd9"></i></div><span id="t1">0%</span><span>Tanah</span><div class="bar"><i id="f2" style="background:#8a5a36"></i></div><span id="t2">0%</span><span>Sensor</span><span id="sn" style="grid-column:2/4">Kering</span></div>
+<p class="hint">Geser untuk memutar, cubit atau gulir untuk zoom. Kecepatan simulasi dipercepat agar siklusnya mudah diamati.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const cv=document.getElementById('cv'),box=document.getElementById('w'),lb=document.getElementById('lb');
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+const S=new THREE.Scene(),C=new THREE.PerspectiveCamera(40,1,.1,100);
+S.add(new THREE.HemisphereLight(0xffffff,0x8a8a80,.8));
+const D=new THREE.DirectionalLight(0xffffff,.8);D.position.set(5,10,6);D.castShadow=true;D.shadow.mapSize.set(1024,1024);
+Object.assign(D.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:1,far:30});S.add(D);
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const M=(c,o)=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.7},o||{}));
+const Bx=(w,h,d)=>new THREE.BoxGeometry(w,h,d),Cy=(a,b,h,s)=>new THREE.CylinderGeometry(a,b,h,s||24),Ic=r=>new THREE.IcosahedronGeometry(r,1);
+function add(g,m,x,y,z){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;S.add(o);return o}
+const gr=M(0x5fa83a);
+add(Bx(6.8,.3,8),M(0xe8e7e1),0,-.15,0);
+add(Bx(6.8,.06,.18),gr,0,.03,3.91);add(Bx(6.8,.06,.18),gr,0,.03,-3.91);add(Bx(.18,.06,8),gr,-3.31,.03,0);add(Bx(.18,.06,8),gr,3.31,.03,0);
+add(Bx(4.2,.4,2.9),M(0xc0392b),-1,.2,-2.16);
+const soilM=M(0x7a5236);add(Bx(3.9,.05,2.6),soilM,-1,.42,-2.16);
+const plants=[],gp=new THREE.ConeGeometry(.15,.5,7),gb=Ic(.17),g1=M(0x3e8e3e),g2=M(0x58a84a);
+for(let i=0;i<6;i++)for(let j=0;j<4;j++){const x=-2.5+i*.68,z=-3.1+j*.6;plants.push(add(gp,(i+j)%2?g1:g2,x,.7,z));const b=add(gb,g1,x,.55,z);b.scale.set(1.2,.9,1.2)}
+const yl=M(0xf5d000,{roughness:.4}),clr=M(0xdfe8ee,{transparent:true,opacity:.55,roughness:.2});
+const DP=[V(.95,.52,-1.6),V(-2.6,.52,-1.6),V(-2.6,.52,-2.2),V(.6,.52,-2.2),V(.6,.52,-2.8),V(-2.6,.52,-2.8)];
+const dp=new THREE.CurvePath();
+for(let i=0;i<DP.length-1;i++){const a=DP[i],b=DP[i+1],d=b.clone().sub(a);const o=add(Cy(.04,.04,d.length(),10),yl,0,0,0);o.position.copy(a).addScaledVector(d,.5);o.quaternion.setFromUnitVectors(V(0,1,0),d.clone().normalize());add(new THREE.SphereGeometry(.04,10,8),yl,b.x,b.y,b.z);dp.add(new THREE.LineCurve3(a,b))}
+const gy=M(0x8c8b85),bl=M(0x2c2c2a);
+add(Bx(.8,.5,.8),gy,2.06,.25,-3.06);add(Bx(.3,.4,.2),M(0x2b5fa8),2.06,.7,-3.06);add(Bx(.3,.08,.2),yl,2.06,.94,-3.06);
+const cn=document.createElement('canvas');cn.width=256;cn.height=64;const g=cn.getContext('2d');
+g.fillStyle='#4a4a4a';g.fillRect(0,0,256,64);g.strokeStyle='#8a8a86';g.lineWidth=2;
+for(let r=0;r<4;r++){g.beginPath();g.moveTo(0,r*16);g.lineTo(256,r*16);g.stroke();for(let c=0;c<8;c++){const x=c*32+(r%2?16:0);g.beginPath();g.moveTo(x,r*16);g.lineTo(x,r*16+16);g.stroke()}}
+const tx=new THREE.CanvasTexture(cn);tx.wrapS=tx.wrapT=THREE.RepeatWrapping;tx.repeat.set(3,1);
+add(Cy(1.24,1.24,.5,48),M(0xffffff,{map:tx,side:THREE.DoubleSide}),-1.5,.25,2.3);
+const rim=add(new THREE.TorusGeometry(1.24,.05,8,48),M(0x2c2c2a),-1.5,.5,2.3);rim.rotation.x=Math.PI/2;
+add(Cy(1.2,1.2,.04,48),M(0x3b8fd9,{transparent:true,opacity:.8,roughness:.1}),-1.5,.33,2.3);
+add(Cy(1.2,1.2,.02,48),M(0x1a5fa8),-1.5,.02,2.3);
+add(Bx(.35,.22,.25),M(0xc9c8c2),-1.05,.2,2.3);
+add(Bx(1.9,.08,1.2),M(0x4c8c2b),-1.4,.04,.2);
+[[.45,.45],[-.45,.45],[.45,-.45],[-.45,-.45]].forEach(p=>add(Bx(.1,1.5,.1),bl,2.5+p[0],.75,.3+p[1]));
+add(Bx(1.1,.1,1.1),bl,2.5,1.55,.3);
+for(let i=0;i<4;i++)add(Cy(i%2?.54:.57,i%2?.54:.57,.24,32),yl,2.5,1.72+i*.25,.3);
+add(Cy(.38,.4,.08,32),yl,2.5,2.64,.3);
+add(Cy(.06,.06,1,12),M(0xffffff,{transparent:true,opacity:.3}),3.25,2.1,.3);
+const fill=add(Cy(.045,.045,1,12),M(0x3b8fd9),3.25,1.6,.3);
+add(Cy(.06,.09,.8,10),M(0x8b4a2b),2,.4,-1.4);
+[[.9,.45],[1.2,.35],[1.5,.25]].forEach(a=>add(Ic(a[1]),M(0x8fe0a0),2,a[0],-1.4));
+add(Cy(.04,.05,.7,8),M(0x8b4a2b),2.9,.35,-2.4);
+for(let i=0;i<4;i++){const l=add(Ic(.3),M(0x3e8e3e),2.9,.8,-2.4);l.scale.set(1.5,.15,.4);l.rotation.y=i*.8}
+[[-3,-.2],[.4,.9],[.9,-.2],[-3,3.2],[1.2,3.3],[-3,1.4]].forEach(p=>{const b=add(Ic(.26),M(0x3e8e3e),p[0],.14,p[1]);b.scale.set(1,.6,1)});
+add(Bx(.03,.35,.03),gy,-.22,.5,-2.5);add(Bx(.03,.35,.03),gy,-.02,.5,-2.5);add(Bx(.3,.16,.1),bl,-.12,.76,-2.5);
+const led=add(new THREE.SphereGeometry(.05,12,10),M(0xff3b30,{emissive:0xff3b30}),-.12,.9,-2.5);
+const c1=new THREE.CatmullRomCurve3([V(-1.05,.35,2.3),V(-1,1.5,2.2),V(.3,2.5,1.4),V(1.8,3.1,.6),V(2.5,2.9,.3),V(2.5,2.65,.3)]);
+const c2=new THREE.CatmullRomCurve3([V(1.95,1.85,.3),V(1.5,2,-.4),V(1.1,1.4,-1),V(.98,.7,-1.45),V(.95,.52,-1.6)]);
+add(new THREE.TubeGeometry(c1,60,.05,8),clr,0,0,0);add(new THREE.TubeGeometry(c2,40,.05,8),clr,0,0,0);
+const w1=new THREE.CatmullRomCurve3([V(1.7,.1,-3),V(1.5,.04,-1.5),V(.4,.04,1),V(-.7,.04,2),V(-1.05,.3,2.3)]);
+const w2=new THREE.CatmullRomCurve3([V(1.78,.1,-2.92),V(1.58,.04,-1.42),V(.48,.04,1.08),V(-.62,.04,2.08),V(-.97,.3,2.3)]);
+add(new THREE.TubeGeometry(w1,60,.018,6),M(0xc0392b),0,0,0);add(new THREE.TubeGeometry(w2,60,.018,6),bl,0,0,0);
+const wm=M(0x3b8fd9,{emissive:0x1a5fa8}),sm=M(0xffd60a,{emissive:0xffd60a}),sg=new THREE.SphereGeometry(.05,8,6);
+const P=[];function mk(c,n,s,m,sc){for(let i=0;i<n;i++){const o=new THREE.Mesh(sg,m);o.scale.setScalar(sc);S.add(o);P.push({o,c,t:i/n,s})}}
+mk(c1,16,.2,wm,1);mk(c2,10,.28,wm,1);mk(dp,22,.12,wm,.9);mk(w1,8,.3,sm,.8);
+const lbs=[['Bak air',V(2.5,3,.3)],['Pompa + kolam',V(-1.5,.9,2.3)],['Bedengan',V(-1.8,1.1,-3.5)],['Baterai 9V',V(2.06,1.25,-3.06)],['Sensor',V(-.12,1.1,-2.5)]].map(a=>{const d=document.createElement('div');d.className='l';d.textContent=a[0];lb.appendChild(d);return{d,p:a[1]}});
+let auto=true,pump=false,wet=.25,L=0,spin=true,th=.75,ph=1,r=15,showL=true;const tg=V(0,.9,0);
+function cam(){C.position.set(tg.x+r*Math.sin(ph)*Math.sin(th),tg.y+r*Math.cos(ph),tg.z+r*Math.sin(ph)*Math.cos(th));C.lookAt(tg)}
+function rs(){const w=box.clientWidth,h=box.clientHeight;R.setSize(w,h,false);C.aspect=w/h;C.updateProjectionMatrix();r=Math.max(r,w<500?15:11)}
+rs();cam();addEventListener('resize',rs);
+const Q=new Map();
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);Q.set(e.pointerId,{x:e.clientX,y:e.clientY});spin=false});
+cv.addEventListener('pointermove',e=>{const p=Q.get(e.pointerId);if(!p)return;
+if(Q.size==1){th-=(e.clientX-p.x)*.008;ph=Math.max(.25,Math.min(1.5,ph-(e.clientY-p.y)*.008))}
+else{const o=[...Q.entries()].find(a=>a[0]!=e.pointerId)[1];const d0=Math.hypot(p.x-o.x,p.y-o.y),d1=Math.hypot(e.clientX-o.x,e.clientY-o.y);if(d1>0)r=Math.max(7,Math.min(24,r*d0/d1))}
+p.x=e.clientX;p.y=e.clientY;cam()});
+['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,e=>Q.delete(e.pointerId)));
+cv.addEventListener('wheel',e=>{e.preventDefault();r=Math.max(7,Math.min(24,r*(1+e.deltaY*.001)));cam()},{passive:false});
+const $=id=>document.getElementById(id),bA=$('bA'),bP=$('bP'),bL=$('bL');
+bA.onclick=()=>{auto=!auto;bA.classList.toggle('on',auto)};
+bP.onclick=()=>{auto=false;bA.classList.remove('on');pump=!pump};
+bL.onclick=()=>{showL=!showL;bL.classList.toggle('on',showL);lb.style.display=showL?'block':'none'};
+$('bR').onclick=()=>{th=.75;ph=1;r=box.clientWidth<500?15:11;spin=true;cam()};
+const dry=new THREE.Color(0x7a5236),wc=new THREE.Color(0x2e1a0e),k=new THREE.Clock(),v=V(0,0,0);
+function loop(){requestAnimationFrame(loop);const dt=Math.min(k.getDelta(),.05),T=k.elapsedTime;
+if(auto){if(wet<.35)pump=true;else if(wet>.85)pump=false}
+if(pump)L=Math.min(1,L+.12*dt);
+const fl=L>.05;if(fl)L=Math.max(0,L-.08*dt);
+wet=Math.max(0,Math.min(1,wet+((fl?.06:0)-.02)*dt));
+soilM.color.copy(dry).lerp(wc,wet);
+fill.scale.y=Math.max(L,.001);fill.position.y=1.6+L*.5;
+const dryS=wet<.35;led.material.color.set(dryS?0xff3b30:0x30d158);led.material.emissive.set(dryS?0xff3b30:0x30d158);
+P.forEach(p=>{const on=p.c===c1||p.c===w1?pump:fl;p.o.visible=on;if(on){p.t=(p.t+p.s*dt)%1;p.o.position.copy(p.c.getPointAt(p.t))}});
+plants.forEach((p,i)=>{p.rotation.z=Math.sin(T*1.5+i)*.05});
+if(spin){th+=.1*dt;cam()}
+const w=box.clientWidth,h=box.clientHeight;
+lbs.forEach(l=>{v.copy(l.p).project(C);l.d.style.left=(v.x*.5+.5)*w+'px';l.d.style.top=(-v.y*.5+.5)*h+'px';l.d.style.opacity=v.z<1?1:0});
+bP.textContent='Pompa: '+(pump?'ON':'OFF');bP.classList.toggle('on',pump);
+$('f1').style.width=L*100+'%';$('t1').textContent=Math.round(L*100)+'%';
+$('f2').style.width=wet*100+'%';$('t2').textContent=Math.round(wet*100)+'%';
+$('sn').textContent=dryS?'Kering: pompa perlu menyala':wet>.85?'Basah: pompa berhenti':'Lembap cukup';
+R.render(S,C)}
+loop();
+})();
+</script>
+</body>
+</html>
